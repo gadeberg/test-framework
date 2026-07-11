@@ -91,13 +91,20 @@ def test_requirement_label_and_steps_land_in_junit_xml(
 
 @pytest.mark.ui
 def test_failing_bdd_web_scenario_captures_screenshot_and_trace(
-    pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch, mock_server_base_url: str
+    pytester: pytest.Pytester,
+    monkeypatch: pytest.MonkeyPatch,
+    mock_server_base_url: str,
+    playwright_browsers_path: str,
 ) -> None:
     # Evidence capture must be equivalent across authoring styles: pytest-
     # playwright's built-in capture (enabled via addopts in both repos) hooks
     # the page/context fixtures, so a failing Gherkin scenario produces the
     # same artifacts a failing plain-Python test does.
     monkeypatch.setenv("BASE_URL", mock_server_base_url)
+    # pytester fakes $HOME, which is where Playwright looks for its browser
+    # cache - point the subprocess at the real one, when one was resolvable.
+    if playwright_browsers_path:
+        monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", playwright_browsers_path)
     pytester.makeconftest(
         """
         import pytest
