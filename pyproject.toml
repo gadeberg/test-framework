@@ -1,6 +1,6 @@
 [project]
 name = "test-framework"
-version = "0.0.0"
+version = "0.1.0"
 description = "Thin, spec-traceable test automation framework wrapping pytest, pytest-bdd, pytest-playwright and httpx."
 readme = "README.md"
 authors = [
