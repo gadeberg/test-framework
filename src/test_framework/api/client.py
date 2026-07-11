@@ -41,6 +41,9 @@ class ApiClient:
         return self._request("DELETE", path, **kwargs)
 
     def _request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
+        # Cleared first so a raising request (timeout, connection error) can't
+        # leave a stale previous response behind for later assertions.
+        self.last_response = None
         response = self._client.request(method, path, **kwargs)
         self.last_response = response
         return response

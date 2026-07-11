@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import httpx
+import pytest
+
 from test_framework.api.client import ApiClient
 
 
@@ -16,6 +19,17 @@ def test_post_sends_json_body(mock_server_base_url: str) -> None:
     resp = client.post("/login", json={"email": "user@example.com", "password": "correct-password"})
     assert resp.status_code == 200
     assert "token" in resp.json()
+    client.close()
+
+
+def test_failed_request_clears_stale_last_response(mock_server_base_url: str) -> None:
+    client = ApiClient(base_url=mock_server_base_url)
+    client.get("/health")
+    assert client.last_response is not None
+    # An absolute URL bypasses base_url; port 9 (discard) refuses immediately.
+    with pytest.raises(httpx.HTTPError):
+        client.get("http://127.0.0.1:9/unreachable")
+    assert client.last_response is None
     client.close()
 
 

@@ -47,8 +47,17 @@ class PyHtmlBackend:
         if mime.startswith("image/"):
             # Embed the image so a --self-contained-html report stays
             # self-contained: a bare file path wouldn't travel with it.
-            encoded = base64.b64encode(Path(path).read_bytes()).decode("ascii")
-            content = f'<img src="data:{mime};base64,{encoded}" style="max-width:100%"/>'
+            try:
+                encoded = base64.b64encode(Path(path).read_bytes()).decode("ascii")
+            except OSError as exc:
+                # An unreadable artifact must degrade to a note in the report,
+                # never crash the reporting phase itself.
+                content = (
+                    f"<code>unreadable attachment {html.escape(path)}: "
+                    f"{html.escape(str(exc))}</code>"
+                )
+            else:
+                content = f'<img src="data:{mime};base64,{encoded}" style="max-width:100%"/>'
         else:
             content = f"<code>{html.escape(path)}</code>"
         self._html_lines.append(

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from test_framework import verify
@@ -34,6 +36,14 @@ def test_status_fails_on_mismatch(spy: SpyBackend) -> None:
     assert spy.checks[-1].ok is False
 
 
+def test_status_on_missing_response_records_failed_check(spy: SpyBackend) -> None:
+    # e.g. the request itself raised and left no response behind: still an
+    # AssertionError with recorded evidence, never a bare AttributeError.
+    with pytest.raises(AssertionError, match="got no response"):
+        verify.status(None, 200)
+    assert spy.checks[-1].ok is False
+
+
 def test_contains_passes(spy: SpyBackend) -> None:
     verify.contains([1, 2, 3], 2, "list")
     assert spy.checks[-1].ok is True
@@ -61,4 +71,12 @@ def test_between_passes(spy: SpyBackend) -> None:
 def test_between_fails_outside_range(spy: SpyBackend) -> None:
     with pytest.raises(AssertionError):
         verify.between(15, 1, 10, "value")
+    assert spy.checks[-1].ok is False
+
+
+def test_between_on_incomparable_value_records_failed_check(spy: SpyBackend) -> None:
+    # e.g. a JSON field that came back as None: still an AssertionError with
+    # recorded evidence, never a bare TypeError with no audit trail.
+    with pytest.raises(AssertionError, match="not comparable"):
+        verify.between(cast(float, None), 1, 10, "json field")
     assert spy.checks[-1].ok is False

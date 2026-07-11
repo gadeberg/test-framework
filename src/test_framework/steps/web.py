@@ -38,21 +38,31 @@ def go_to_named_page(
         scenario_context["page"] = page_object
 
 
+def _current_page(scenario_context: dict[str, Any]) -> BasePage:
+    page_object = scenario_context.get("page")
+    if not isinstance(page_object, BasePage):
+        raise LookupError(
+            "no active page object in scenario_context - navigate first with "
+            "the 'I am on the \"...\" page' step"
+        )
+    return page_object
+
+
 @_when(parsers.parse('I fill in "{field}" with "{value}"'))
 def fill_field(scenario_context: dict[str, Any], field: str, value: str) -> None:
     with step(f'Fill in "{field}" with "{value}"'):
-        scenario_context["page"].locator(field).fill(value)
+        _current_page(scenario_context).locator(field).fill(value)
 
 
 @_when(parsers.parse('I click "{field}"'))
 def click_field(scenario_context: dict[str, Any], field: str) -> None:
     with step(f'Click "{field}"'):
-        scenario_context["page"].locator(field).click()
+        _current_page(scenario_context).locator(field).click()
 
 
 @_then(parsers.parse('the "{field}" is visible'))
 def field_is_visible(scenario_context: dict[str, Any], field: str) -> None:
-    locator = scenario_context["page"].locator(field)
+    locator = _current_page(scenario_context).locator(field)
     name = f'"{field}" is visible'
     # Playwright's expect() auto-waits for eventual consistency (e.g. a field
     # revealed by an async fetch) and its AssertionError is the real assertion
@@ -67,7 +77,7 @@ def field_is_visible(scenario_context: dict[str, Any], field: str) -> None:
 
 @_then(parsers.parse('the "{field}" has text "{text}"'))
 def field_has_text(scenario_context: dict[str, Any], field: str, text: str) -> None:
-    locator = scenario_context["page"].locator(field)
+    locator = _current_page(scenario_context).locator(field)
     name = f'"{field}" text contains {text!r}'
     try:
         _expect(locator).to_contain_text(text)  # pyright: ignore[reportUnknownMemberType] - playwright's overload stubs are imprecise here

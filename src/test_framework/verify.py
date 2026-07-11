@@ -28,10 +28,15 @@ def equals(actual: object, expected: object, label: str = "value") -> None:
     _check(f"{label} equals {expected!r}", ok, detail)
 
 
-def status(response: _HasStatusCode, expected: int) -> None:
-    actual = response.status_code
-    ok = actual == expected
-    detail = f"response status: expected {expected}, got {actual}"
+def status(response: _HasStatusCode | None, expected: int) -> None:
+    if response is None:
+        # e.g. the request itself raised before a response existed: a missing
+        # response is a failed check with evidence, never a bare AttributeError.
+        detail = f"response status: expected {expected}, got no response"
+    else:
+        actual = response.status_code
+        detail = f"response status: expected {expected}, got {actual}"
+    ok = response is not None and response.status_code == expected
     _check(f"status equals {expected}", ok, detail)
 
 
@@ -48,8 +53,14 @@ def contains(container: object, member: object, label: str = "value") -> None:
 
 
 def between(actual: float, low: float, high: float, label: str = "value") -> None:
-    ok = low <= actual <= high
-    detail = f"{label}: expected {low!r} <= {actual!r} <= {high!r}"
+    try:
+        ok = low <= actual <= high
+        detail = f"{label}: expected {low!r} <= {actual!r} <= {high!r}"
+    except TypeError:
+        # e.g. a JSON field that came back as None: incomparability is a
+        # failed check with evidence, never a bare TypeError.
+        ok = False
+        detail = f"{label}: expected {low!r} <= {actual!r} <= {high!r}, which is not comparable"
     _check(f"{label} between {low!r} and {high!r}", ok, detail)
 
 

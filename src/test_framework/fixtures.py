@@ -112,7 +112,11 @@ def pytest_runtest_makereport(
 ) -> Generator[None, Result[pytest.TestReport], None]:
     outcome = yield
     test_report = outcome.get_result()
-    if test_report.when != "call":
+    # The call phase always renders; a failed setup/teardown phase renders too,
+    # so evidence collected before e.g. a broken fixture isn't lost. (By
+    # teardown-report time the per-test backend is already closed, so this
+    # never duplicates the call-phase block.)
+    if test_report.when != "call" and not test_report.failed:
         return
 
     backend = report.current_backend_or_none()
