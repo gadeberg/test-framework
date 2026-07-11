@@ -102,8 +102,9 @@ def test_failing_bdd_web_scenario_captures_screenshot_and_trace(
     # same artifacts a failing plain-Python test does.
     monkeypatch.setenv("BASE_URL", mock_server_base_url)
     # pytester fakes $HOME, which is where Playwright looks for its browser
-    # cache - point the subprocess at the real one.
-    monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", playwright_browsers_path)
+    # cache - point the subprocess at the real one, when one was resolvable.
+    if playwright_browsers_path:
+        monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", playwright_browsers_path)
     pytester.makeconftest(
         """
         import pytest
